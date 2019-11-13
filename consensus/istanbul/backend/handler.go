@@ -58,11 +58,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 
 	sb.logger.Trace("HandleMsg called", "address", addr, "msg", msg, "peer.Node()", peer.Node())
 
-	if msg.Code == istanbulDelegateSign {
-		sb.logger.Info("woohoo! got istanbulDelegateSign message")
-	}
-
-	if (msg.Code == istanbulMsg) || (msg.Code == istanbulAnnounceMsg) || (msg.Code == istanbulValEnodeShareMsg) || (msg.Code == istanbulFwdMsg) {
+	if (msg.Code == istanbulMsg) || (msg.Code == istanbulAnnounceMsg) || (msg.Code == istanbulValEnodeShareMsg) || (msg.Code == istanbulFwdMsg) || (msg.Code == istanbulDelegateSign) {
 		if (!sb.coreStarted && !sb.config.Proxy) && (msg.Code == istanbulMsg) {
 			return true, istanbul.ErrStoppedEngine
 		}
@@ -135,6 +131,9 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 			go sb.handleIstAnnounce(data)
 		} else if msg.Code == istanbulValEnodeShareMsg {
 			go sb.handleValEnodeShareMsg(data)
+		} else if msg.Code == istanbulDelegateSign {
+			sb.logger.Info("woohoo! got istanbulDelegateSign message", "msg", msg, "data string", string(data))
+			return true, nil
 		}
 
 		return true, nil
