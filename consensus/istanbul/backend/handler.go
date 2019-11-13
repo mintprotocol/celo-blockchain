@@ -33,6 +33,7 @@ const (
 	istanbulAnnounceMsg      = 0x12
 	istanbulValEnodeShareMsg = 0x13
 	istanbulFwdMsg           = 0x14
+	istanbulDelegateSign     = 0x15
 )
 
 var (
@@ -45,7 +46,7 @@ func (sb *Backend) Protocol() consensus.Protocol {
 	return consensus.Protocol{
 		Name:     "istanbul",
 		Versions: []uint{64},
-		Lengths:  []uint64{21},
+		Lengths:  []uint64{22},
 		Primary:  true,
 	}
 }
@@ -56,6 +57,10 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 	defer sb.coreMu.Unlock()
 
 	sb.logger.Trace("HandleMsg called", "address", addr, "msg", msg, "peer.Node()", peer.Node())
+
+	if msg.Code == istanbulDelegateSign {
+		sb.logger.Info("woohoo! got istanbulDelegateSign message")
+	}
 
 	if (msg.Code == istanbulMsg) || (msg.Code == istanbulAnnounceMsg) || (msg.Code == istanbulValEnodeShareMsg) || (msg.Code == istanbulFwdMsg) {
 		if (!sb.coreStarted && !sb.config.Proxy) && (msg.Code == istanbulMsg) {
@@ -88,7 +93,6 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 		sb.knownMessages.Add(hash, true)
 
 		if msg.Code == istanbulMsg {
-			sb.logger.Debug("woohoo got istanbulMsg", "msg", msg, "data", data)
 			if sb.config.Proxy {
 				// Verify that this message is not from the proxied peer
 				if reflect.DeepEqual(peer, sb.proxiedPeer) {

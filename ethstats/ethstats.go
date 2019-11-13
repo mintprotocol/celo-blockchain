@@ -540,11 +540,12 @@ func (s *Service) sendStats(conn *websocket.Conn, action string, stats interface
 	signature, _ := crypto.Sign(msgHash.Bytes(), nodeKey)
 
 	proxiedPeer := s.backend.ProxiedPeer()
+	log.Info("inside sendStats")
 
 	if proxiedPeer != nil {
-		log.Debug("woohoo proxiedPeer isn't nil")
+		log.Info("woohoo proxiedPeer isn't nil")
 		// istanbulMsg := 0x11
-		go proxiedPeer.Send(0x11, "woohooooo")
+		go proxiedPeer.Send(0x15, "woohooooo")
 	}
 
 	return nil
