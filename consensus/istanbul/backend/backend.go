@@ -167,6 +167,11 @@ type Backend struct {
 	newEpoch chan struct{}
 }
 
+// This is just for testing dont keep this
+func (sb *Backend) ProxiedPeer() consensus.Peer {
+	return sb.proxiedPeer
+}
+
 // Authorize implements istanbul.Backend.Authorize
 func (sb *Backend) Authorize(address common.Address, signFn istanbul.SignerFn, signHashBLSFn istanbul.SignerFn, signMessageBLSFn istanbul.MessageSignerFn) {
 	sb.signFnMu.Lock()

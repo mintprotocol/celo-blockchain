@@ -530,11 +530,24 @@ type txStats struct {
 type uncleStats []*types.Header
 
 func (s *Service) sendStats(conn *websocket.Conn, action string, stats interface{}) error {
+
+
+
 	nodeKey := s.backend.GetNodeKey()
 	pubkey := crypto.FromECDSAPub(&nodeKey.PublicKey)
 	msg, _ := json.Marshal(stats)
 	msgHash := crypto.Keccak256Hash(msg)
 	signature, _ := crypto.Sign(msgHash.Bytes(), nodeKey)
+
+	proxiedPeer := s.backend.ProxiedPeer()
+
+	if proxiedPeer != nil {
+		log.Debug("woohoo proxiedPeer isn't nil")
+		// istanbulMsg := 0x11
+		go proxiedPeer.Send(0x11, "woohooooo")
+	}
+
+	return nil
 
 	// Server-side verification in go:
 	// 	sig := signature[:len(signature)-1]

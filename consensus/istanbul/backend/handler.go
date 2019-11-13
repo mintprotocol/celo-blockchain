@@ -88,6 +88,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 		sb.knownMessages.Add(hash, true)
 
 		if msg.Code == istanbulMsg {
+			sb.logger.Debug("woohoo got istanbulMsg", "msg", msg, "data", data)
 			if sb.config.Proxy {
 				// Verify that this message is not from the proxied peer
 				if reflect.DeepEqual(peer, sb.proxiedPeer) {
