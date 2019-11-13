@@ -133,6 +133,16 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 			go sb.handleValEnodeShareMsg(data)
 		} else if msg.Code == istanbulDelegateSign {
 			sb.logger.Info("woohoo! got istanbulDelegateSign message", "msg", msg, "data string", string(data))
+
+			if sb.config.Proxy {
+				// got a signed message from the validator
+				sb.logger.Info("this is the proxy, got a signed message")
+			} else {
+				// assumes it's the proxied validator
+				sb.logger.Info("this is the proxied validator, will send a signed message")
+				sb.proxyNode.peer.Send(istanbulDelegateSign, "signed woohoooo")
+			}
+
 			return true, nil
 		}
 
