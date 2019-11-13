@@ -176,6 +176,7 @@ func (c *core) commit() {
 	proposal := c.current.Proposal()
 	bitmap := big.NewInt(0)
 	publicKeys := [][]byte{}
+	// REVIEW: Is it safe to do nothing on proposal nil.
 	if proposal != nil {
 		committedSeals := make([][]byte, c.current.Commits.Size())
 		for i, v := range c.current.Commits.Values() {
@@ -183,6 +184,7 @@ func (c *core) commit() {
 			copy(committedSeals[i][:], v.CommittedSeal[:])
 			j, err := c.current.Commits.GetAddressIndex(v.Address)
 			if err != nil {
+				// REVIEW: Possibly return an error or round change like it done below if instead of panicing.
 				panic(fmt.Sprintf("commit: couldn't get address index for address %s", hex.EncodeToString(v.Address[:])))
 			}
 			publicKey, err := c.current.Commits.GetAddressPublicKey(v.Address)
@@ -235,6 +237,7 @@ func (c *core) getPreprepareWithRoundChangeCertificate(round *big.Int) (*istanbu
 }
 
 // startNewRound starts a new round. if round equals to 0, it means to starts a new sequence
+// Note: Round number argument is ignored in the case of a sequence change.
 func (c *core) startNewRound(round *big.Int) {
 	var logger log.Logger
 	if c.current == nil {
@@ -318,6 +321,7 @@ func (c *core) startNewRound(round *big.Int) {
 }
 
 // All actions that occur when transitioning to waiting for round change state.
+// REVIEW: Change this to `waitForDesiredView` to wait for a new round and sequence, which any sequence change causing us to continue.
 func (c *core) waitForDesiredRound(r *big.Int) {
 	logger := c.logger.New("func", "waitForDesiredRound", "cur_round", c.current.Round(), "old_desired_round", c.current.DesiredRound(), "new_desired_round", r)
 	// Don't wait for an older round

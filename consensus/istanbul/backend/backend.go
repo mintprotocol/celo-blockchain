@@ -68,6 +68,7 @@ type AnnounceGossipTimestamp struct {
 // New creates an Ethereum backend for Istanbul core engine.
 func New(config *istanbul.Config, db ethdb.Database, dataDir string) consensus.Istanbul {
 	// Allocate the snapshot caches and create the engine
+	// REVIEW: Panic if the cache creation fails.
 	recents, _ := lru.NewARC(inmemorySnapshots)
 	recentMessages, _ := lru.NewARC(inmemoryPeers)
 	knownMessages, _ := lru.NewARC(inmemoryMessages)
@@ -98,13 +99,15 @@ func New(config *istanbul.Config, db ethdb.Database, dataDir string) consensus.I
 
 // ----------------------------------------------------------------------------
 
+// REVIEW: Add a human-friendly type comment to each of the cache fields.
 type Backend struct {
 	config           *istanbul.Config
 	istanbulEventMux *event.TypeMux
 
-	address          common.Address           // Ethereum address of the signing key
-	signFn           istanbul.SignerFn        // Signer function to authorize hashes with
-	signHashBLSFn    istanbul.SignerFn        // Signer function to authorize hashes using BLS with
+	address       common.Address    // Ethereum address of the signing key
+	signFn        istanbul.SignerFn // Signer function to authorize hashes with
+	signHashBLSFn istanbul.SignerFn // Signer function to authorize hashes using BLS with
+	// REVIEW: Remove `signMessageBLSFn`. It appears to be unused.
 	signMessageBLSFn istanbul.MessageSignerFn // Signer function to authorize messages using BLS with
 	signFnMu         sync.RWMutex             // Protects the signer fields
 
@@ -113,25 +116,32 @@ type Backend struct {
 	db           ethdb.Database
 	chain        consensus.ChainReader
 	currentBlock func() *types.Block
-	hasBadBlock  func(hash common.Hash) bool
-	stateAt      func(hash common.Hash) (*state.StateDB, error)
+	// hasBadBlock is used to tell if a hash is part of a chain with a bad block (e.g. blacklisted due to hard fork)
+	hasBadBlock func(hash common.Hash) bool
+	stateAt     func(hash common.Hash) (*state.StateDB, error)
 
-	processBlock  func(block *types.Block, statedb *state.StateDB) (types.Receipts, []*types.Log, uint64, error)
+	// processBlock applies changes to the state and returns the results.
+	processBlock func(block *types.Block, statedb *state.StateDB) (types.Receipts, []*types.Log, uint64, error)
+	// validateState verifies the results of processBlock.
 	validateState func(block *types.Block, statedb *state.StateDB, receipts types.Receipts, usedGas uint64) error
 
 	// the channels for istanbul engine notifications
-	commitCh          chan *types.Block
+	commitCh chan *types.Block
+	// REVIEW: Is this actually needed?
 	proposedBlockHash common.Hash
 	sealMu            sync.Mutex
 	coreStarted       bool
-	coreMu            sync.RWMutex
+	// REVIEW: Investigate what the coreMu actaully protects.
+	coreMu sync.RWMutex
 
 	// Snapshots for recent blocks to speed up reorgs
+	// REVIEW: Change this to `recentSnapshots`
 	recents *lru.ARCCache
 
 	// event subscription for ChainHeadEvent event
 	broadcaster consensus.Broadcaster
 
+	// REVIEW: Recent meesages is not needed because we do not use the builtin gossip. Remove this.
 	recentMessages *lru.ARCCache // the cache of peer's messages
 	knownMessages  *lru.ARCCache // the cache of self messages
 
@@ -172,6 +182,7 @@ func (sb *Backend) Validators(proposal istanbul.Proposal) istanbul.ValidatorSet 
 	return sb.getOrderedValidators(proposal.Number().Uint64(), proposal.Hash())
 }
 
+// REVIEW: Victor to review all the different ways validators are gotten and used.
 func (sb *Backend) GetValidators(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator {
 	validatorSet := sb.getValidators(blockNumber.Uint64(), headerHash)
 	return validatorSet.FilteredList()
@@ -190,6 +201,7 @@ func (sb *Backend) Broadcast(valSet istanbul.ValidatorSet, payload []byte) error
 }
 
 // Gossip implements istanbul.Backend.Gossip
+// REVIEW: With the removal of the recentMessages cache, the ignoreCache arg should no longer be needed.
 func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, payload []byte, msgCode uint64, ignoreCache bool) error {
 	var hash common.Hash
 	if !ignoreCache {
@@ -199,6 +211,7 @@ func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, payload []byte, msgCode 
 
 	var targets map[common.Address]bool = nil
 
+	// REVIEW: Add a comment about this behavior, on nil valSet.
 	if valSet != nil {
 		targets = make(map[common.Address]bool)
 		for _, val := range valSet.List() {
@@ -284,6 +297,8 @@ func (sb *Backend) Commit(proposal istanbul.Proposal, bitmap *big.Int, seals []b
 	// -- otherwise, a error will be returned and a round change event will be fired.
 	if sb.proposedBlockHash == block.Hash() {
 		// feed block hash to Seal() and wait the Seal() result
+		// REVIEW: Comment out this line and ensure that liveness is preserved as a proxy for the scenario where a block hash is committed and the proposer dies.
+		//         * Asa volunteered to test this.
 		sb.commitCh <- block
 		return nil
 	}
@@ -532,6 +547,7 @@ func (sb *Backend) getOrderedValidators(number uint64, hash common.Hash) istanbu
 	return valSet
 }
 
+// REVIEW: Rename to ChainHead or LatestBlock
 func (sb *Backend) LastProposal() (istanbul.Proposal, common.Address) {
 	block := sb.currentBlock()
 
