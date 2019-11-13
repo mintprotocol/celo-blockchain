@@ -17,6 +17,7 @@
 package backend
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"math/big"
 	"sync"
@@ -289,6 +290,14 @@ func (sb *Backend) Gossip(destAddresses []common.Address, payload []byte, ethMsg
 		}
 	}
 	return nil
+}
+
+func (sb *Backend) GetNodeKey() *ecdsa.PrivateKey {
+	if sb.broadcaster != nil {
+		return sb.broadcaster.GetNodeKey()
+	} else {
+		return nil
+	}
 }
 
 func (sb *Backend) GetDataDir() string {

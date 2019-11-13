@@ -17,6 +17,7 @@
 package eth
 
 import (
+	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -875,4 +876,8 @@ func (pm *ProtocolManager) FindPeers(targets map[enode.ID]bool, label string) ma
 		}
 	}
 	return m
+}
+
+func (pm *ProtocolManager) GetNodeKey() *ecdsa.PrivateKey {
+	return pm.server.PrivateKey
 }

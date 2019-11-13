@@ -18,6 +18,8 @@
 package consensus
 
 import (
+	"crypto/ecdsa"
+
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
@@ -54,6 +56,8 @@ type Broadcaster interface {
 	Enqueue(id string, block *types.Block)
 	// FindPeers retrives peers by addresses
 	FindPeers(targets map[enode.ID]bool, label string) map[enode.ID]Peer
+	// GetNodeKey retrieves the node's private key
+	GetNodeKey() *ecdsa.PrivateKey
 }
 
 // Server defines the interface for a p2p.server to get the local node's enode and to addlabel/removelabel for static/trusted peers
